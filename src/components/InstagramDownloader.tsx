@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { Download, Instagram, Loader2, Play, Image as ImageIcon, Link, Sparkles } from "lucide-react";
+import { Download, Instagram, Loader2, Play, Image as ImageIcon, Link, Sparkles, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { MediaPreviewModal } from "./MediaPreviewModal";
 
 interface MediaResult {
   url: string;
   type: string;
   thumbnail?: string;
+  quality?: string;
 }
 
 interface ApiResponse {
@@ -22,6 +24,8 @@ export function InstagramDownloader() {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<MediaResult[]>([]);
+  const [previewMedia, setPreviewMedia] = useState<MediaResult | null>(null);
+  const [downloadingIndex, setDownloadingIndex] = useState<number | null>(null);
 
   const handleDownload = async () => {
     if (!url.trim()) {
@@ -48,10 +52,10 @@ export function InstagramDownloader() {
 
       if (data?.media && Array.isArray(data.media)) {
         setResults(data.media);
-        toast.success("Media found! Click to download.");
+        toast.success("Media found! Click to preview or download.");
       } else if (data?.result && Array.isArray(data.result)) {
         setResults(data.result);
-        toast.success("Media found! Click to download.");
+        toast.success("Media found! Click to preview or download.");
       } else if (data?.error) {
         throw new Error(data.error);
       } else {
@@ -66,15 +70,29 @@ export function InstagramDownloader() {
     }
   };
 
-  const downloadFile = async (mediaUrl: string, index: number) => {
+  const downloadFile = async (media: MediaResult, index: number) => {
+    setDownloadingIndex(index);
     try {
-      const response = await fetch(mediaUrl);
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
+      toast.info("Preparing download...");
       
+      // Use proxy to avoid CORS issues
+      const { data, error } = await supabase.functions.invoke("instagram-proxy", {
+        body: { mediaUrl: media.url },
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // Convert the response to blob
+      const blob = new Blob([data], { 
+        type: media.type === "video" ? "video/mp4" : "image/jpeg" 
+      });
+      
+      const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = blobUrl;
-      link.download = `instagram_media_${index + 1}.${blob.type.includes("video") ? "mp4" : "jpg"}`;
+      link.download = `instagram_${media.type}_${index + 1}.${media.type === "video" ? "mp4" : "jpg"}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -82,8 +100,12 @@ export function InstagramDownloader() {
       
       toast.success("Download started!");
     } catch (err) {
-      toast.error("Failed to download file");
       console.error("Download error:", err);
+      // Fallback: open in new tab
+      toast.info("Opening in new tab...");
+      window.open(media.url, "_blank");
+    } finally {
+      setDownloadingIndex(null);
     }
   };
 
@@ -145,7 +167,10 @@ export function InstagramDownloader() {
                 className="group relative bg-card/60 backdrop-blur-glass border border-border/50 rounded-xl overflow-hidden hover:border-primary/50 transition-all duration-300"
               >
                 <div className="flex items-center gap-4 p-4">
-                  <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                  <div 
+                    className="relative w-20 h-20 rounded-lg overflow-hidden bg-muted flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+                    onClick={() => setPreviewMedia(media)}
+                  >
                     {media.thumbnail ? (
                       <img
                         src={media.thumbnail}
@@ -173,24 +198,57 @@ export function InstagramDownloader() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-foreground capitalize">
                       {media.type || "Media"} #{index + 1}
+                      {media.quality && (
+                        <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">
+                          {media.quality}
+                        </span>
+                      )}
                     </p>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {media.url.substring(0, 50)}...
+                    <p className="text-sm text-muted-foreground">
+                      Click thumbnail to preview
                     </p>
                   </div>
                   
-                  <Button
-                    onClick={() => downloadFile(media.url, index)}
-                    className="gradient-instagram hover:opacity-90 transition-opacity rounded-lg"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Download
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setPreviewMedia(media)}
+                      className="rounded-lg hover:border-primary hover:text-primary"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      onClick={() => downloadFile(media, index)}
+                      disabled={downloadingIndex === index}
+                      className="gradient-instagram hover:opacity-90 transition-opacity rounded-lg"
+                    >
+                      {downloadingIndex === index ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4 mr-2" />
+                          Download
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
+      )}
+
+      {/* Preview Modal */}
+      {previewMedia && (
+        <MediaPreviewModal
+          isOpen={!!previewMedia}
+          onClose={() => setPreviewMedia(null)}
+          media={previewMedia}
+          onDownload={() => downloadFile(previewMedia, results.indexOf(previewMedia))}
+          isDownloading={downloadingIndex === results.indexOf(previewMedia)}
+        />
       )}
     </div>
   );
