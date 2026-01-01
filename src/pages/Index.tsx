@@ -1,12 +1,24 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { BackgroundGradient } from "@/components/BackgroundGradient";
+import { Header } from "@/components/Header";
+import { InstagramDownloader } from "@/components/InstagramDownloader";
+import { Features } from "@/components/Features";
 
 const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="relative min-h-screen bg-background overflow-hidden">
+      <BackgroundGradient />
+      
+      <main className="relative z-10 container mx-auto px-4 py-12 md:py-20">
+        <Header />
+        <InstagramDownloader />
+        <Features />
+        
+        {/* Footer */}
+        <footer className="mt-20 text-center text-sm text-muted-foreground">
+          <p>Xinstan is not affiliated with Instagram or Meta.</p>
+          <p className="mt-1">Use responsibly and respect copyright.</p>
+        </footer>
+      </main>
     </div>
   );
 };
