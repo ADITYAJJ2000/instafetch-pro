@@ -14,6 +14,7 @@ interface MediaResult {
 interface ApiResponse {
   status?: string;
   result?: MediaResult[];
+  media?: MediaResult[];
   error?: string;
 }
 
@@ -45,7 +46,10 @@ export function InstagramDownloader() {
         throw new Error(error.message);
       }
 
-      if (data?.result && Array.isArray(data.result)) {
+      if (data?.media && Array.isArray(data.media)) {
+        setResults(data.media);
+        toast.success("Media found! Click to download.");
+      } else if (data?.result && Array.isArray(data.result)) {
         setResults(data.result);
         toast.success("Media found! Click to download.");
       } else if (data?.error) {
