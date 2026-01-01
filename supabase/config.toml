@@ -1,1 +1,4 @@
 project_id = "pseldsapqbsfqlslmtxp"
+
+[functions.instagram-download]
+verify_jwt = false
