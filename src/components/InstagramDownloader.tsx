@@ -72,43 +72,49 @@ export function InstagramDownloader() {
 
   const downloadFile = async (media: MediaResult, index: number) => {
     setDownloadingIndex(index);
+    const desiredMime = media.type === "video" ? "video/mp4" : "image/jpeg";
+    const desiredExt = media.type === "video" ? "mp4" : "jpg";
+    const filename = `instagram_${media.type}_${index + 1}.${desiredExt}`;
+
     try {
-      toast.info("Preparing download...");
+      // Try direct fetch first (faster if CORS allows)
+      const directResponse = await fetch(media.url, { mode: "cors" });
+      if (directResponse.ok) {
+        const blob = await directResponse.blob();
+        const blobUrl = URL.createObjectURL(new Blob([blob], { type: desiredMime }));
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(blobUrl);
+        toast.success("Downloaded!");
+        setDownloadingIndex(null);
+        return;
+      }
+    } catch {
+      // CORS blocked, use proxy
+    }
 
-      const desiredMime = media.type === "video" ? "video/mp4" : "image/jpeg";
-      const desiredExt = media.type === "video" ? "mp4" : "jpg";
-
-      // Use proxy to avoid CORS issues
+    try {
       const { data, error } = await supabase.functions.invoke("instagram-proxy", {
         body: { mediaUrl: media.url },
       });
 
-      if (error) {
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
 
-      // supabase-js returns a Blob when the function responds with application/octet-stream
       const blob = data instanceof Blob
-        ? data.slice(0, data.size, desiredMime)
+        ? new Blob([data], { type: desiredMime })
         : new Blob([data], { type: desiredMime });
-
-      if (!blob || blob.size === 0) {
-        throw new Error("Downloaded file is empty");
-      }
 
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = blobUrl;
-      link.download = `instagram_${media.type}_${index + 1}.${desiredExt}`;
-      document.body.appendChild(link);
+      link.download = filename;
       link.click();
-      document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
-
-      toast.success("Download started!");
+      toast.success("Downloaded!");
     } catch (err) {
       console.error("Download error:", err);
-      toast.info("Opening in new tab...");
       window.open(media.url, "_blank");
     } finally {
       setDownloadingIndex(null);
