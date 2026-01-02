@@ -74,7 +74,10 @@ export function InstagramDownloader() {
     setDownloadingIndex(index);
     try {
       toast.info("Preparing download...");
-      
+
+      const desiredMime = media.type === "video" ? "video/mp4" : "image/jpeg";
+      const desiredExt = media.type === "video" ? "mp4" : "jpg";
+
       // Use proxy to avoid CORS issues
       const { data, error } = await supabase.functions.invoke("instagram-proxy", {
         body: { mediaUrl: media.url },
@@ -84,24 +87,27 @@ export function InstagramDownloader() {
         throw new Error(error.message);
       }
 
-      // Convert the response to blob
-      const blob = new Blob([data], { 
-        type: media.type === "video" ? "video/mp4" : "image/jpeg" 
-      });
-      
+      // supabase-js returns a Blob when the function responds with application/octet-stream
+      const blob = data instanceof Blob
+        ? data.slice(0, data.size, desiredMime)
+        : new Blob([data], { type: desiredMime });
+
+      if (!blob || blob.size === 0) {
+        throw new Error("Downloaded file is empty");
+      }
+
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = blobUrl;
-      link.download = `instagram_${media.type}_${index + 1}.${media.type === "video" ? "mp4" : "jpg"}`;
+      link.download = `instagram_${media.type}_${index + 1}.${desiredExt}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
-      
+
       toast.success("Download started!");
     } catch (err) {
       console.error("Download error:", err);
-      // Fallback: open in new tab
       toast.info("Opening in new tab...");
       window.open(media.url, "_blank");
     } finally {
