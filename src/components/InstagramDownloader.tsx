@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download, Instagram, Loader2, Play, Image as ImageIcon, Link, Sparkles, Eye } from "lucide-react";
+import { Download, Loader2, Play, Image as ImageIcon, Link, Sparkles, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,7 +25,6 @@ export function InstagramDownloader() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<MediaResult[]>([]);
   const [previewMedia, setPreviewMedia] = useState<MediaResult | null>(null);
-  const [downloadingIndex, setDownloadingIndex] = useState<number | null>(null);
 
   const handleDownload = async () => {
     if (!url.trim()) {
@@ -67,51 +66,6 @@ export function InstagramDownloader() {
       console.error("Download error:", err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const downloadFile = async (media: MediaResult, index: number) => {
-    setDownloadingIndex(index);
-    try {
-      toast.info("Preparing download...");
-
-      const desiredMime = media.type === "video" ? "video/mp4" : "image/jpeg";
-      const desiredExt = media.type === "video" ? "mp4" : "jpg";
-
-      // Use proxy to avoid CORS issues
-      const { data, error } = await supabase.functions.invoke("instagram-proxy", {
-        body: { mediaUrl: media.url },
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      // supabase-js returns a Blob when the function responds with application/octet-stream
-      const blob = data instanceof Blob
-        ? data.slice(0, data.size, desiredMime)
-        : new Blob([data], { type: desiredMime });
-
-      if (!blob || blob.size === 0) {
-        throw new Error("Downloaded file is empty");
-      }
-
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = `instagram_${media.type}_${index + 1}.${desiredExt}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
-
-      toast.success("Download started!");
-    } catch (err) {
-      console.error("Download error:", err);
-      toast.info("Opening in new tab...");
-      window.open(media.url, "_blank");
-    } finally {
-      setDownloadingIndex(null);
     }
   };
 
@@ -211,7 +165,7 @@ export function InstagramDownloader() {
                       )}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Click thumbnail to preview
+                      Click to preview & download
                     </p>
                   </div>
                   
@@ -225,18 +179,11 @@ export function InstagramDownloader() {
                       <Eye className="w-4 h-4" />
                     </Button>
                     <Button
-                      onClick={() => downloadFile(media, index)}
-                      disabled={downloadingIndex === index}
+                      onClick={() => setPreviewMedia(media)}
                       className="gradient-instagram hover:opacity-90 transition-opacity rounded-lg"
                     >
-                      {downloadingIndex === index ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Download className="w-4 h-4 mr-2" />
-                          Download
-                        </>
-                      )}
+                      <Download className="w-4 h-4 mr-2" />
+                      Download
                     </Button>
                   </div>
                 </div>
@@ -252,8 +199,7 @@ export function InstagramDownloader() {
           isOpen={!!previewMedia}
           onClose={() => setPreviewMedia(null)}
           media={previewMedia}
-          onDownload={() => downloadFile(previewMedia, results.indexOf(previewMedia))}
-          isDownloading={downloadingIndex === results.indexOf(previewMedia)}
+          index={results.indexOf(previewMedia)}
         />
       )}
     </div>

@@ -1,6 +1,7 @@
 import { X, Download, Play, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { toast } from "sonner";
 
 interface MediaPreviewModalProps {
   isOpen: boolean;
@@ -10,18 +11,54 @@ interface MediaPreviewModalProps {
     type: string;
     thumbnail?: string;
   };
-  onDownload: () => void;
-  isDownloading: boolean;
+  index: number;
 }
 
 export function MediaPreviewModal({ 
   isOpen, 
   onClose, 
-  media, 
-  onDownload,
-  isDownloading 
+  media,
+  index
 }: MediaPreviewModalProps) {
   const [isLoading, setIsLoading] = useState(true);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = useCallback(async () => {
+    setIsDownloading(true);
+    
+    try {
+      const desiredMime = media.type === "video" ? "video/mp4" : "image/jpeg";
+      const desiredExt = media.type === "video" ? "mp4" : "jpg";
+      
+      // Direct fetch for speed - the media URL is already loaded in preview
+      const response = await fetch(media.url);
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch media");
+      }
+      
+      const blob = await response.blob();
+      const finalBlob = new Blob([blob], { type: desiredMime });
+      
+      const blobUrl = URL.createObjectURL(finalBlob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `instagram_${media.type}_${index + 1}.${desiredExt}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+      
+      toast.success("Download complete!");
+    } catch (err) {
+      console.error("Download error:", err);
+      // Fallback: open in new tab
+      toast.info("Opening in new tab...");
+      window.open(media.url, "_blank");
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [media, index]);
 
   if (!isOpen) return null;
 
@@ -92,7 +129,7 @@ export function MediaPreviewModal({
             Close
           </Button>
           <Button
-            onClick={onDownload}
+            onClick={handleDownload}
             disabled={isDownloading}
             className="gradient-instagram hover:opacity-90 rounded-xl"
           >
