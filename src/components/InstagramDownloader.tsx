@@ -225,18 +225,11 @@ export function InstagramDownloader() {
                       <Eye className="w-4 h-4" />
                     </Button>
                     <Button
-                      onClick={() => downloadFile(media, index)}
-                      disabled={downloadingIndex === index}
+                      onClick={() => setPreviewMedia(media)}
                       className="gradient-instagram hover:opacity-90 transition-opacity rounded-lg"
                     >
-                      {downloadingIndex === index ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Download className="w-4 h-4 mr-2" />
-                          Download
-                        </>
-                      )}
+                      <Download className="w-4 h-4 mr-2" />
+                      Download
                     </Button>
                   </div>
                 </div>
