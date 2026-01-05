@@ -33,21 +33,27 @@ export function MediaPreviewModal({
     setIsDownloading(true);
     
     try {
-      // Use proxy to avoid CORS and get correct file type
+      const ext = isVideo ? "mp4" : "jpg";
+      const mimeType = isVideo ? "video/mp4" : "image/jpeg";
+      
+      // Use proxy to avoid CORS - returns binary data as Blob
       const { data, error } = await supabase.functions.invoke("instagram-proxy", {
         body: { mediaUrl: media.url },
       });
 
       if (error) throw new Error(error.message);
-
-      // Get the original content type from headers
-      const originalType = data?.headers?.get?.("X-Original-Content-Type") || 
-                          (isVideo ? "video/mp4" : "image/jpeg");
       
-      const ext = isVideo ? "mp4" : "jpg";
-      const mimeType = isVideo ? "video/mp4" : "image/jpeg";
+      // Data is already a Blob from the edge function
+      let blob: Blob;
+      if (data instanceof Blob) {
+        blob = new Blob([data], { type: mimeType });
+      } else if (data instanceof ArrayBuffer) {
+        blob = new Blob([data], { type: mimeType });
+      } else {
+        // If data is something else, try to convert
+        blob = new Blob([data], { type: mimeType });
+      }
       
-      const blob = new Blob([data], { type: mimeType });
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = blobUrl;
