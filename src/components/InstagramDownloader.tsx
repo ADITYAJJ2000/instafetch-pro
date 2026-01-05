@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { Download, Loader2, Play, Image as ImageIcon, Link, Sparkles, Eye } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Download, Loader2, Play, Image as ImageIcon, Link, Sparkles, Eye, PackageCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { MediaPreviewModal } from "./MediaPreviewModal";
@@ -25,6 +26,9 @@ export function InstagramDownloader() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<MediaResult[]>([]);
   const [previewMedia, setPreviewMedia] = useState<MediaResult | null>(null);
+  const [bulkDownloading, setBulkDownloading] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState(0);
+  const [bulkCurrent, setBulkCurrent] = useState(0);
 
   const handleDownload = async () => {
     if (!url.trim()) {
@@ -68,6 +72,69 @@ export function InstagramDownloader() {
       setLoading(false);
     }
   };
+
+  const isVideoType = (type: string) => {
+    return type === "video" || type === "mp4" || type === "webm" || type === "mov";
+  };
+
+  const handleBulkDownload = useCallback(async () => {
+    if (results.length === 0) return;
+    
+    setBulkDownloading(true);
+    setBulkProgress(0);
+    setBulkCurrent(0);
+    
+    let successCount = 0;
+    
+    for (let i = 0; i < results.length; i++) {
+      const media = results[i];
+      setBulkCurrent(i + 1);
+      setBulkProgress(((i + 1) / results.length) * 100);
+      
+      try {
+        const isVideo = isVideoType(media.type);
+        const ext = isVideo ? "mp4" : "jpg";
+        const mimeType = isVideo ? "video/mp4" : "image/jpeg";
+        
+        const { data, error } = await supabase.functions.invoke("instagram-proxy", {
+          body: { mediaUrl: media.url },
+        });
+
+        if (error) throw new Error(error.message);
+        
+        const blob = new Blob([data], { type: mimeType });
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = `instagram_${isVideo ? "video" : "image"}_${i + 1}.${ext}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+        
+        successCount++;
+        
+        // Small delay between downloads to prevent browser issues
+        if (i < results.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      } catch (err) {
+        console.error(`Failed to download item ${i + 1}:`, err);
+      }
+    }
+    
+    setBulkDownloading(false);
+    setBulkProgress(0);
+    setBulkCurrent(0);
+    
+    if (successCount === results.length) {
+      toast.success(`All ${successCount} files downloaded!`);
+    } else if (successCount > 0) {
+      toast.success(`Downloaded ${successCount} of ${results.length} files`);
+    } else {
+      toast.error("Failed to download files");
+    }
+  }, [results]);
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-8">
@@ -115,10 +182,43 @@ export function InstagramDownloader() {
       {/* Results Section */}
       {results.length > 0 && (
         <div className="space-y-4">
-          <div className="flex items-center gap-2 text-foreground">
-            <Sparkles className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold">Found {results.length} media file{results.length > 1 ? "s" : ""}</h3>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-foreground">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold">Found {results.length} media file{results.length > 1 ? "s" : ""}</h3>
+            </div>
+            
+            {results.length > 1 && (
+              <Button
+                onClick={handleBulkDownload}
+                disabled={bulkDownloading}
+                className="gradient-instagram hover:opacity-90 transition-opacity rounded-xl"
+              >
+                {bulkDownloading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {bulkCurrent}/{results.length}
+                  </>
+                ) : (
+                  <>
+                    <PackageCheck className="w-4 h-4 mr-2" />
+                    Download All
+                  </>
+                )}
+              </Button>
+            )}
           </div>
+          
+          {/* Bulk Download Progress */}
+          {bulkDownloading && (
+            <div className="bg-card/60 backdrop-blur-glass border border-border/50 rounded-xl p-4 space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Downloading {bulkCurrent} of {results.length}...</span>
+                <span className="text-primary font-medium">{Math.round(bulkProgress)}%</span>
+              </div>
+              <Progress value={bulkProgress} className="h-2" />
+            </div>
+          )}
           
           <div className="grid gap-4">
             {results.map((media, index) => (

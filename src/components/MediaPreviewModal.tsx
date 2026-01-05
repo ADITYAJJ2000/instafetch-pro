@@ -1,6 +1,7 @@
-import { X, Download, Play, Loader2 } from "lucide-react";
+import { X, Download, Play, Loader2, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useCallback, useEffect } from "react";
+import { Progress } from "@/components/ui/progress";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -26,19 +27,44 @@ export function MediaPreviewModal({
   index
 }: MediaPreviewModalProps) {
   const [isLoading, setIsLoading] = useState(true);
+  const [loadProgress, setLoadProgress] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
   const [mediaBlobUrl, setMediaBlobUrl] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const isVideo = isVideoType(media.type);
 
-  // Load media through proxy to avoid CORS issues
+  // Load media through proxy to avoid CORS issues with progress tracking
   const loadMediaViaProxy = useCallback(async () => {
     setIsLoading(true);
+    setLoadProgress(0);
+    
+    // Cancel any previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    
     try {
+      // Simulate progress while fetching (actual progress tracking requires streaming)
+      const progressInterval = setInterval(() => {
+        setLoadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          return prev + Math.random() * 15;
+        });
+      }, 200);
+      
       const { data, error } = await supabase.functions.invoke("instagram-proxy", {
         body: { mediaUrl: media.url },
       });
 
+      clearInterval(progressInterval);
+      
       if (error) throw new Error(error.message);
+      
+      setLoadProgress(100);
       
       const mimeType = isVideo ? "video/mp4" : "image/jpeg";
       const blob = new Blob([data], { type: mimeType });
@@ -59,6 +85,9 @@ export function MediaPreviewModal({
       loadMediaViaProxy();
     }
     return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
       if (mediaBlobUrl) {
         URL.revokeObjectURL(mediaBlobUrl);
         setMediaBlobUrl(null);
@@ -143,8 +172,21 @@ export function MediaPreviewModal({
         {/* Content */}
         <div className="relative bg-background/50 flex items-center justify-center min-h-[300px] max-h-[60vh] overflow-hidden">
           {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
-              <Loader2 className="w-10 h-10 text-primary animate-spin" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/50 gap-4 p-8">
+              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+                {isVideo ? (
+                  <Play className="w-8 h-8 text-primary" />
+                ) : (
+                  <ImageIcon className="w-8 h-8 text-primary" />
+                )}
+              </div>
+              <div className="w-full max-w-xs space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Loading {isVideo ? "video" : "image"}...</span>
+                  <span className="text-primary font-medium">{Math.round(loadProgress)}%</span>
+                </div>
+                <Progress value={loadProgress} className="h-2" />
+              </div>
             </div>
           )}
           
