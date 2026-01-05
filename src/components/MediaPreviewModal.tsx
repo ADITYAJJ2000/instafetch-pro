@@ -2,6 +2,7 @@ import { X, Download, Play, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MediaPreviewModalProps {
   isOpen: boolean;
@@ -14,6 +15,10 @@ interface MediaPreviewModalProps {
   index: number;
 }
 
+const isVideoType = (type: string) => {
+  return type === "video" || type === "mp4" || type === "webm" || type === "mov";
+};
+
 export function MediaPreviewModal({ 
   isOpen, 
   onClose, 
@@ -22,28 +27,31 @@ export function MediaPreviewModal({
 }: MediaPreviewModalProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
+  const isVideo = isVideoType(media.type);
 
   const handleDownload = useCallback(async () => {
     setIsDownloading(true);
     
     try {
-      const desiredMime = media.type === "video" ? "video/mp4" : "image/jpeg";
-      const desiredExt = media.type === "video" ? "mp4" : "jpg";
+      // Use proxy to avoid CORS and get correct file type
+      const { data, error } = await supabase.functions.invoke("instagram-proxy", {
+        body: { mediaUrl: media.url },
+      });
+
+      if (error) throw new Error(error.message);
+
+      // Get the original content type from headers
+      const originalType = data?.headers?.get?.("X-Original-Content-Type") || 
+                          (isVideo ? "video/mp4" : "image/jpeg");
       
-      // Direct fetch for speed - the media URL is already loaded in preview
-      const response = await fetch(media.url);
+      const ext = isVideo ? "mp4" : "jpg";
+      const mimeType = isVideo ? "video/mp4" : "image/jpeg";
       
-      if (!response.ok) {
-        throw new Error("Failed to fetch media");
-      }
-      
-      const blob = await response.blob();
-      const finalBlob = new Blob([blob], { type: desiredMime });
-      
-      const blobUrl = URL.createObjectURL(finalBlob);
+      const blob = new Blob([data], { type: mimeType });
+      const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = blobUrl;
-      link.download = `instagram_${media.type}_${index + 1}.${desiredExt}`;
+      link.download = `instagram_${isVideo ? "video" : "image"}_${index + 1}.${ext}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -52,13 +60,12 @@ export function MediaPreviewModal({
       toast.success("Download complete!");
     } catch (err) {
       console.error("Download error:", err);
-      // Fallback: open in new tab
       toast.info("Opening in new tab...");
       window.open(media.url, "_blank");
     } finally {
       setIsDownloading(false);
     }
-  }, [media, index]);
+  }, [media, index, isVideo]);
 
   if (!isOpen) return null;
 
@@ -96,12 +103,13 @@ export function MediaPreviewModal({
             </div>
           )}
           
-          {media.type === "video" ? (
+          {isVideo ? (
             <video
               src={media.url}
               controls
               autoPlay
               playsInline
+              crossOrigin="anonymous"
               className="max-w-full max-h-[60vh] object-contain"
               onLoadedData={() => setIsLoading(false)}
               onError={() => setIsLoading(false)}
@@ -112,6 +120,7 @@ export function MediaPreviewModal({
             <img
               src={media.url}
               alt="Instagram media"
+              crossOrigin="anonymous"
               className="max-w-full max-h-[60vh] object-contain"
               onLoad={() => setIsLoading(false)}
               onError={() => setIsLoading(false)}
