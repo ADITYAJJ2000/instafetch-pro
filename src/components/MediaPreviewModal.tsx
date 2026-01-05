@@ -1,6 +1,6 @@
 import { X, Download, Play, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -27,33 +27,72 @@ export function MediaPreviewModal({
 }: MediaPreviewModalProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [mediaBlobUrl, setMediaBlobUrl] = useState<string | null>(null);
   const isVideo = isVideoType(media.type);
 
-  const handleDownload = useCallback(async () => {
-    setIsDownloading(true);
-    
+  // Load media through proxy to avoid CORS issues
+  const loadMediaViaProxy = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const ext = isVideo ? "mp4" : "jpg";
-      const mimeType = isVideo ? "video/mp4" : "image/jpeg";
-      
-      // Use proxy to avoid CORS - returns binary data as Blob
       const { data, error } = await supabase.functions.invoke("instagram-proxy", {
         body: { mediaUrl: media.url },
       });
 
       if (error) throw new Error(error.message);
       
-      // Data is already a Blob from the edge function
-      let blob: Blob;
-      if (data instanceof Blob) {
-        blob = new Blob([data], { type: mimeType });
-      } else if (data instanceof ArrayBuffer) {
-        blob = new Blob([data], { type: mimeType });
-      } else {
-        // If data is something else, try to convert
-        blob = new Blob([data], { type: mimeType });
+      const mimeType = isVideo ? "video/mp4" : "image/jpeg";
+      const blob = new Blob([data], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      setMediaBlobUrl(url);
+    } catch (err) {
+      console.error("Failed to load media via proxy:", err);
+      // Fallback to direct URL
+      setMediaBlobUrl(media.url);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [media.url, isVideo]);
+
+  // Load media when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      loadMediaViaProxy();
+    }
+    return () => {
+      if (mediaBlobUrl) {
+        URL.revokeObjectURL(mediaBlobUrl);
+        setMediaBlobUrl(null);
+      }
+    };
+  }, [isOpen, media.url]);
+
+  const handleDownload = useCallback(async () => {
+    setIsDownloading(true);
+    
+    try {
+      const ext = isVideo ? "mp4" : "jpg";
+      
+      // If we already have the blob URL, use it directly for faster download
+      if (mediaBlobUrl) {
+        const link = document.createElement("a");
+        link.href = mediaBlobUrl;
+        link.download = `instagram_${isVideo ? "video" : "image"}_${index + 1}.${ext}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success("Download complete!");
+        return;
       }
       
+      // Fallback: fetch via proxy if blob not available
+      const mimeType = isVideo ? "video/mp4" : "image/jpeg";
+      const { data, error } = await supabase.functions.invoke("instagram-proxy", {
+        body: { mediaUrl: media.url },
+      });
+
+      if (error) throw new Error(error.message);
+      
+      const blob = new Blob([data], { type: mimeType });
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = blobUrl;
@@ -71,7 +110,7 @@ export function MediaPreviewModal({
     } finally {
       setIsDownloading(false);
     }
-  }, [media, index, isVideo]);
+  }, [media, index, isVideo, mediaBlobUrl]);
 
   if (!isOpen) return null;
 
@@ -109,27 +148,23 @@ export function MediaPreviewModal({
             </div>
           )}
           
-          {isVideo ? (
+          {mediaBlobUrl && isVideo && (
             <video
-              src={media.url}
+              src={mediaBlobUrl}
               controls
               autoPlay
               playsInline
-              crossOrigin="anonymous"
               className="max-w-full max-h-[60vh] object-contain"
-              onLoadedData={() => setIsLoading(false)}
-              onError={() => setIsLoading(false)}
             >
               Your browser does not support video playback.
             </video>
-          ) : (
+          )}
+          
+          {mediaBlobUrl && !isVideo && (
             <img
-              src={media.url}
+              src={mediaBlobUrl}
               alt="Instagram media"
-              crossOrigin="anonymous"
               className="max-w-full max-h-[60vh] object-contain"
-              onLoad={() => setIsLoading(false)}
-              onError={() => setIsLoading(false)}
             />
           )}
         </div>
