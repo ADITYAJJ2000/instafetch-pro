@@ -146,7 +146,7 @@ export function InstagramDownloader() {
                         )}
                       </div>
                     )}
-                    {media.type === "video" && (
+                    {(media.type === "video" || media.type === "mp4") && (
                       <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
                         <div className="w-8 h-8 rounded-full bg-primary/90 flex items-center justify-center">
                           <Play className="w-4 h-4 text-primary-foreground fill-current ml-0.5" />
@@ -157,7 +157,7 @@ export function InstagramDownloader() {
                   
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-foreground capitalize">
-                      {media.type || "Media"} #{index + 1}
+                      {(media.type === "mp4" || media.type === "video") ? "Video" : media.type || "Media"} #{index + 1}
                       {media.quality && (
                         <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">
                           {media.quality}
