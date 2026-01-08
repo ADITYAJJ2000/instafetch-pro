@@ -96,10 +96,24 @@ export function InstagramDownloader() {
       } else {
         throw new Error("No media found in the response");
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to fetch media";
-      toast.error(errorMessage);
+    } catch (err: unknown) {
       console.error("Download error:", err);
+      
+      // Check for quota exceeded error (429)
+      const errorObj = err as { message?: string; context?: { body?: string } };
+      const errorBody = errorObj?.context?.body || errorObj?.message || "";
+      
+      if (errorBody.includes("exceeded") && errorBody.includes("quota")) {
+        toast.error("Service is temporarily busy. Please try again in a few minutes.", {
+          description: "High demand - our servers are processing many requests.",
+          duration: 5000,
+        });
+      } else if (errorBody.includes("429") || errorBody.includes("rate limit")) {
+        toast.error("Too many requests. Please wait a moment and try again.");
+      } else {
+        const errorMessage = err instanceof Error ? err.message : "Failed to fetch media";
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
