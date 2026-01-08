@@ -45,16 +45,13 @@ export function MediaPreviewModal({
     abortControllerRef.current = new AbortController();
     
     try {
-      // Simulate progress while fetching (actual progress tracking requires streaming)
+      // Faster progress simulation
+      let progress = 0;
       const progressInterval = setInterval(() => {
-        setLoadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return prev;
-          }
-          return prev + Math.random() * 15;
-        });
-      }, 200);
+        progress += Math.random() * 20 + 10;
+        if (progress > 85) progress = 85;
+        setLoadProgress(progress);
+      }, 100);
       
       const { data, error } = await supabase.functions.invoke("instagram-proxy", {
         body: { mediaUrl: media.url },
@@ -64,15 +61,34 @@ export function MediaPreviewModal({
       
       if (error) throw new Error(error.message);
       
-      setLoadProgress(100);
+      // Ensure we have valid data
+      if (!data) throw new Error("No data received");
+      
+      setLoadProgress(95);
       
       const mimeType = isVideo ? "video/mp4" : "image/jpeg";
-      const blob = new Blob([data], { type: mimeType });
+      
+      // Handle different response types
+      let blob: Blob;
+      if (data instanceof Blob) {
+        blob = new Blob([data], { type: mimeType });
+      } else if (data instanceof ArrayBuffer) {
+        blob = new Blob([data], { type: mimeType });
+      } else if (typeof data === "object" && data !== null) {
+        // If it's JSON-like or Uint8Array-like, convert to array buffer
+        const values = Object.values(data) as number[];
+        const uint8 = new Uint8Array(values);
+        blob = new Blob([uint8], { type: mimeType });
+      } else {
+        throw new Error("Unexpected data format");
+      }
+      
       const url = URL.createObjectURL(blob);
       setMediaBlobUrl(url);
+      setLoadProgress(100);
     } catch (err) {
       console.error("Failed to load media via proxy:", err);
-      // Fallback to direct URL
+      // Fallback to direct URL for images (videos may still fail due to CORS)
       setMediaBlobUrl(media.url);
     } finally {
       setIsLoading(false);
