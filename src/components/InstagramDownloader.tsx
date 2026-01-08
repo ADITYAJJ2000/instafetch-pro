@@ -250,7 +250,7 @@ export function InstagramDownloader() {
                     {media.thumbnail ? <img src={media.thumbnail} alt={`Media ${index + 1}`} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">
                         {media.type === "video" ? <Play className="w-8 h-8 text-muted-foreground" /> : <ImageIcon className="w-8 h-8 text-muted-foreground" />}
                       </div>}
-                    {(media.type === "video" || media.type === "mp4") && <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
+                    {(media.type === "video" || media.type === "mp4") && <div className="absolute inset-0 bg-background/50 flex items-center justify-center px-[12px]">
                         <div className="w-8 h-8 rounded-full bg-primary/90 flex items-center justify-center">
                           <Play className="w-4 h-4 text-primary-foreground fill-current ml-0.5" />
                         </div>
