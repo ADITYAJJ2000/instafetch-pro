@@ -257,7 +257,11 @@ export function InstagramDownloader() {
                       </div>}
                   </div>
                   
-                  
+                  <div className="flex-1 min-w-0">
+                    {media.quality && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">
+                        {media.quality}
+                      </span>}
+                  </div>
                   
                   <div className="flex gap-2">
                     <Button variant="outline" size="icon" onClick={() => {
