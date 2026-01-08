@@ -242,6 +242,13 @@ export function InstagramDownloader() {
           
           <div className="grid gap-4">
             {results.map((media, index) => <div key={index} className="group relative bg-card/60 backdrop-blur-glass border border-border/50 rounded-xl overflow-hidden hover:border-primary/50 transition-all duration-300">
+                <Button variant="outline" size="icon" onClick={() => {
+                  setPreviewMedia(media);
+                  setPreviewIndex(index);
+                }} className="absolute top-2 right-2 rounded-lg hover:border-primary hover:text-primary z-10">
+                  <Eye className="w-4 h-4" />
+                </Button>
+                
                 <div className="p-4 flex flex-col items-center gap-4">
                   <div className="relative w-32 h-32 rounded-lg overflow-hidden bg-muted cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => {
                     setPreviewMedia(media);
@@ -256,13 +263,6 @@ export function InstagramDownloader() {
                         </div>
                       </div>}
                   </div>
-                  
-                  <Button variant="outline" size="icon" onClick={() => {
-                    setPreviewMedia(media);
-                    setPreviewIndex(index);
-                  }} className="rounded-lg hover:border-primary hover:text-primary">
-                    <Eye className="w-4 h-4" />
-                  </Button>
                   
                   <Button onClick={() => {
                     setPreviewMedia(media);
