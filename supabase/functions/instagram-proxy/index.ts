@@ -6,6 +6,29 @@ const corsHeaders = {
   'Access-Control-Expose-Headers': 'Content-Disposition, X-Original-Content-Type',
 };
 
+// Validate media URL to prevent SSRF - only allow Instagram CDN domains
+function isValidMediaUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    
+    // Only allow Instagram/Facebook CDN domains
+    const allowedDomains = [
+      'cdninstagram.com',
+      'instagram.com',
+      'fbcdn.net'
+    ];
+    
+    // Only allow HTTPS
+    if (url.protocol !== 'https:') {
+      return false;
+    }
+    
+    return allowedDomains.some(domain => url.hostname.endsWith(domain));
+  } catch {
+    return false;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -14,9 +37,18 @@ serve(async (req) => {
   try {
     const { mediaUrl } = await req.json();
 
-    if (!mediaUrl) {
+    if (!mediaUrl || typeof mediaUrl !== 'string') {
       return new Response(
-        JSON.stringify({ error: 'Media URL is required' }),
+        JSON.stringify({ error: 'Valid media URL is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate media URL to prevent SSRF attacks
+    if (!isValidMediaUrl(mediaUrl)) {
+      console.error('Invalid media URL rejected:', mediaUrl.substring(0, 100));
+      return new Response(
+        JSON.stringify({ error: 'Invalid media URL. Only Instagram CDN URLs are allowed.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -28,7 +60,7 @@ serve(async (req) => {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': '*/*',
-        'Accept-Encoding': 'identity', // Avoid compression overhead
+        'Accept-Encoding': 'identity',
         'Referer': 'https://www.instagram.com/',
         'Connection': 'keep-alive',
       },
@@ -40,7 +72,6 @@ serve(async (req) => {
 
     const originalContentType = response.headers.get('content-type') || 'application/octet-stream';
     
-    // Stream the response directly instead of buffering
     const ext = originalContentType.includes('mp4')
       ? 'mp4'
       : originalContentType.includes('jpeg')
@@ -55,7 +86,6 @@ serve(async (req) => {
 
     console.log('Streaming media, content-type:', originalContentType);
 
-    // Stream directly - don't buffer the entire response
     return new Response(response.body, {
       headers: {
         ...corsHeaders,
