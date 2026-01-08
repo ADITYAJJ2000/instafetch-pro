@@ -85,15 +85,36 @@ serve(async (req) => {
       }
     });
 
-    const data = await response.json();
-    console.log('API Response received');
+     const raw = await response.text();
+     let data: unknown;
+     try {
+       data = JSON.parse(raw);
+     } catch {
+       data = { raw };
+     }
+     console.log('API Response received');
 
-    if (!response.ok) {
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch from Instagram', details: data }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+     if (!response.ok) {
+       const message = typeof (data as any)?.message === 'string' ? (data as any).message : '';
+       const isQuotaExceeded = response.status === 429 || message.toLowerCase().includes('monthly quota');
+
+       // Avoid surfacing 429 to the client runtime overlay; return a typed error payload instead.
+       if (isQuotaExceeded) {
+         console.warn('RapidAPI quota exceeded');
+         return new Response(
+           JSON.stringify({
+             error: 'Download service temporarily unavailable. Please try again later.',
+             code: 'QUOTA_EXCEEDED',
+           }),
+           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+         );
+       }
+
+       return new Response(
+         JSON.stringify({ error: 'Failed to fetch from Instagram', details: data }),
+         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+       );
+     }
 
     return new Response(
       JSON.stringify(data),

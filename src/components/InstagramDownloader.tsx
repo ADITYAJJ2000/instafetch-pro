@@ -81,8 +81,31 @@ export function InstagramDownloader() {
         body: { url: url.trim() },
       });
 
+      // When the backend returns non-2xx, Supabase returns an error object here.
       if (error) {
-        throw new Error(error.message);
+        const ctxBody = (error as any)?.context?.body;
+        const combined = `${error.message ?? ""}\n${typeof ctxBody === "string" ? ctxBody : ""}`.toLowerCase();
+
+        if (combined.includes("monthly quota") || combined.includes("quota")) {
+          toast.error("Download service temporarily unavailable.", {
+            description: "The provider quota is exceeded. Try again later.",
+            duration: 6000,
+          });
+        } else if (combined.includes("429") || combined.includes("rate limit")) {
+          toast.error("Too many requests. Please wait and try again.");
+        } else {
+          toast.error("Failed to fetch media. Please try again.");
+        }
+        return;
+      }
+
+      const code = (data as any)?.code as string | undefined;
+      if (code === "QUOTA_EXCEEDED") {
+        toast.error("Download service temporarily unavailable.", {
+          description: "The provider quota is exceeded. Try again later.",
+          duration: 6000,
+        });
+        return;
       }
 
       if (data?.media && Array.isArray(data.media)) {
@@ -92,28 +115,13 @@ export function InstagramDownloader() {
         setResults(data.result);
         toast.success("Media found! Click to preview or download.");
       } else if (data?.error) {
-        throw new Error(data.error);
+        toast.error(data.error);
       } else {
-        throw new Error("No media found in the response");
+        toast.error("No media found in the response");
       }
     } catch (err: unknown) {
       console.error("Download error:", err);
-      
-      // Check for quota exceeded error (429)
-      const errorObj = err as { message?: string; context?: { body?: string } };
-      const errorBody = errorObj?.context?.body || errorObj?.message || "";
-      
-      if (errorBody.includes("exceeded") && errorBody.includes("quota")) {
-        toast.error("Service is temporarily busy. Please try again in a few minutes.", {
-          description: "High demand - our servers are processing many requests.",
-          duration: 5000,
-        });
-      } else if (errorBody.includes("429") || errorBody.includes("rate limit")) {
-        toast.error("Too many requests. Please wait a moment and try again.");
-      } else {
-        const errorMessage = err instanceof Error ? err.message : "Failed to fetch media";
-        toast.error(errorMessage);
-      }
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
