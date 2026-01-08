@@ -2,8 +2,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import { HashRouter, Routes, Route } from "react-router-dom";
+import VideoPage from "./pages/VideoPage";
+import PhotoPage from "./pages/PhotoPage";
+import ReelsPage from "./pages/ReelsPage";
+import StoryPage from "./pages/StoryPage";
+import CarouselPage from "./pages/CarouselPage";
+import IGTVPage from "./pages/IGTVPage";
+import ViewerPage from "./pages/ViewerPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -13,13 +19,18 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <HashRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/" element={<VideoPage />} />
+          <Route path="/photo" element={<PhotoPage />} />
+          <Route path="/reels" element={<ReelsPage />} />
+          <Route path="/story" element={<StoryPage />} />
+          <Route path="/carousel" element={<CarouselPage />} />
+          <Route path="/igtv" element={<IGTVPage />} />
+          <Route path="/viewer" element={<ViewerPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );
