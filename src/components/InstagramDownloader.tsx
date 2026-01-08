@@ -217,7 +217,7 @@ export function InstagramDownloader() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-foreground">
               <Sparkles className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-semibold">Found {results.length} media file{results.length > 1 ? "s" : ""}</h3>
+              <h3 className="text-lg font-semibold">CONTENT FOUND</h3>
             </div>
             
             {results.length > 1 && <Button onClick={handleBulkDownload} disabled={bulkDownloading} className="gradient-instagram hover:opacity-90 transition-opacity rounded-xl">
