@@ -3,7 +3,6 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  // Let the browser read our filename / metadata headers
   'Access-Control-Expose-Headers': 'Content-Disposition, X-Original-Content-Type',
 };
 
@@ -24,11 +23,14 @@ serve(async (req) => {
 
     console.log('Proxying media URL:', String(mediaUrl).substring(0, 100));
 
+    // Use streaming fetch for faster response
     const response = await fetch(mediaUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': '*/*',
+        'Accept-Encoding': 'identity', // Avoid compression overhead
         'Referer': 'https://www.instagram.com/',
+        'Connection': 'keep-alive',
       },
     });
 
@@ -37,10 +39,8 @@ serve(async (req) => {
     }
 
     const originalContentType = response.headers.get('content-type') || 'application/octet-stream';
-    const arrayBuffer = await response.arrayBuffer();
-
-    console.log('Successfully fetched media, size:', arrayBuffer.byteLength);
-
+    
+    // Stream the response directly instead of buffering
     const ext = originalContentType.includes('mp4')
       ? 'mp4'
       : originalContentType.includes('jpeg')
@@ -53,15 +53,16 @@ serve(async (req) => {
 
     const filename = `instagram-media.${ext}`;
 
-    // IMPORTANT:
-    // supabase-js Functions client treats video/* as text, which corrupts downloads.
-    // Forcing octet-stream makes the client return a Blob.
-    return new Response(new Uint8Array(arrayBuffer), {
+    console.log('Streaming media, content-type:', originalContentType);
+
+    // Stream directly - don't buffer the entire response
+    return new Response(response.body, {
       headers: {
         ...corsHeaders,
         'Content-Type': 'application/octet-stream',
         'X-Original-Content-Type': originalContentType,
         'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'public, max-age=3600',
       },
     });
   } catch (error: unknown) {
