@@ -257,9 +257,6 @@ export function InstagramDownloader() {
                       </div>}
                   </div>
                   
-                  <div className="flex-1 min-w-0">
-                    {media.quality}
-                  </div>
                   
                   <div className="flex gap-2">
                     <Button variant="outline" size="icon" onClick={() => {
