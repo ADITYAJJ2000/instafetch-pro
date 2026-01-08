@@ -257,21 +257,20 @@ export function InstagramDownloader() {
                       </div>}
                   </div>
                   
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="icon" onClick={() => {
-                      setPreviewMedia(media);
-                      setPreviewIndex(index);
-                    }} className="rounded-lg hover:border-primary hover:text-primary">
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    <Button onClick={() => {
-                      setPreviewMedia(media);
-                      setPreviewIndex(index);
-                    }} className="gradient-instagram hover:opacity-90 transition-opacity rounded-lg">
-                      <Download className="w-4 h-4 mr-2" />
-                      Download
-                    </Button>
-                  </div>
+                  <Button variant="outline" size="icon" onClick={() => {
+                    setPreviewMedia(media);
+                    setPreviewIndex(index);
+                  }} className="rounded-lg hover:border-primary hover:text-primary">
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  
+                  <Button onClick={() => {
+                    setPreviewMedia(media);
+                    setPreviewIndex(index);
+                  }} className="gradient-instagram hover:opacity-90 transition-opacity rounded-lg w-full">
+                    <Download className="w-4 h-4 mr-2" />
+                    Download
+                  </Button>
                 </div>
               </div>)}
           </div>
