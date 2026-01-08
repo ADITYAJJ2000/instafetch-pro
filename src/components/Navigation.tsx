@@ -34,7 +34,7 @@ export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   return <nav className="w-full max-w-3xl mx-auto mb-8">
-      <div className="flex flex-wrap justify-center p-2 bg-card/60 backdrop-blur-glass border border-border/50 rounded-2xl gap-px">
+      <div className="flex-wrap p-2 bg-card/60 backdrop-blur-glass border border-border/50 rounded-2xl gap-px flex items-start justify-center">
         {navItems.map(({
         path,
         label,
