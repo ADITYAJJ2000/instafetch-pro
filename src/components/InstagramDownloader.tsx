@@ -184,7 +184,7 @@ export function InstagramDownloader() {
       {/* Input Section */}
       <div className="relative group">
         <div className="absolute -inset-1 gradient-instagram rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-500" />
-        <div className="relative bg-card/80 backdrop-blur-glass border border-border/50 rounded-2xl p-6 space-y-4">
+        <div className="relative bg-card/80 backdrop-blur-glass border border-border/50 p-6 space-y-4 rounded-3xl shadow-none">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl gradient-instagram flex items-center justify-center">
               <Link className="w-5 h-5 text-primary-foreground" />
