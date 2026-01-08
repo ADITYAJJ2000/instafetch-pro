@@ -187,7 +187,7 @@ export function InstagramDownloader() {
         <div className="relative bg-card/80 backdrop-blur-glass border border-border/50 p-6 space-y-4 rounded-3xl shadow-none py-[24px] px-[24px]">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl gradient-instagram flex items-center justify-center">
-              <Link className="w-5 h-5 text-primary-foreground" />
+              <Link className="text-primary-foreground w-[24px] h-[24px]" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-foreground text-justify px-[12px]">Paste Instagram Link</h2>
