@@ -258,15 +258,9 @@ export function InstagramDownloader() {
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground capitalize">
-                      {media.type === "mp4" || media.type === "video" ? "Video" : media.type || "Media"} #{index + 1}
-                      {media.quality && <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">
-                          {media.quality}
-                        </span>}
-                    </p>
-                    <p className="text-muted-foreground mx-0 text-xs font-mono font-semibold">
-                      ​
-                    </p>
+                    {media.quality && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">
+                        {media.quality}
+                      </span>}
                   </div>
                   
                   <div className="flex gap-2">
