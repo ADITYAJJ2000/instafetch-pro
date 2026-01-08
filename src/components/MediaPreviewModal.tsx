@@ -1,6 +1,5 @@
 import { X, Download, Play, Loader2, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,16 +26,14 @@ export function MediaPreviewModal({
   index
 }: MediaPreviewModalProps) {
   const [isLoading, setIsLoading] = useState(true);
-  const [loadProgress, setLoadProgress] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
   const [mediaBlobUrl, setMediaBlobUrl] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const isVideo = isVideoType(media.type);
 
-  // Load media through proxy to avoid CORS issues with progress tracking
+  // Load media through proxy with optimized fetching
   const loadMediaViaProxy = useCallback(async () => {
     setIsLoading(true);
-    setLoadProgress(0);
     
     // Cancel any previous request
     if (abortControllerRef.current) {
@@ -45,37 +42,22 @@ export function MediaPreviewModal({
     abortControllerRef.current = new AbortController();
     
     try {
-      // Faster progress simulation
-      let progress = 0;
-      const progressInterval = setInterval(() => {
-        progress += Math.random() * 20 + 10;
-        if (progress > 85) progress = 85;
-        setLoadProgress(progress);
-      }, 100);
-      
       const { data, error } = await supabase.functions.invoke("instagram-proxy", {
         body: { mediaUrl: media.url },
       });
-
-      clearInterval(progressInterval);
       
       if (error) throw new Error(error.message);
-      
-      // Ensure we have valid data
       if (!data) throw new Error("No data received");
-      
-      setLoadProgress(95);
       
       const mimeType = isVideo ? "video/mp4" : "image/jpeg";
       
-      // Handle different response types
+      // Handle different response types efficiently
       let blob: Blob;
       if (data instanceof Blob) {
         blob = new Blob([data], { type: mimeType });
       } else if (data instanceof ArrayBuffer) {
         blob = new Blob([data], { type: mimeType });
       } else if (typeof data === "object" && data !== null) {
-        // If it's JSON-like or Uint8Array-like, convert to array buffer
         const values = Object.values(data) as number[];
         const uint8 = new Uint8Array(values);
         blob = new Blob([uint8], { type: mimeType });
@@ -85,10 +67,9 @@ export function MediaPreviewModal({
       
       const url = URL.createObjectURL(blob);
       setMediaBlobUrl(url);
-      setLoadProgress(100);
     } catch (err) {
       console.error("Failed to load media via proxy:", err);
-      // Fallback to direct URL for images (videos may still fail due to CORS)
+      // Fallback to direct URL
       setMediaBlobUrl(media.url);
     } finally {
       setIsLoading(false);
@@ -188,20 +169,27 @@ export function MediaPreviewModal({
         {/* Content */}
         <div className="relative bg-background/50 flex items-center justify-center min-h-[300px] max-h-[60vh] overflow-hidden">
           {isLoading && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/50 gap-4 p-8">
-              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
-                {isVideo ? (
-                  <Play className="w-8 h-8 text-primary" />
-                ) : (
-                  <ImageIcon className="w-8 h-8 text-primary" />
-                )}
-              </div>
-              <div className="w-full max-w-xs space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Loading {isVideo ? "video" : "image"}...</span>
-                  <span className="text-primary font-medium">{Math.round(loadProgress)}%</span>
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/50 gap-6 p-8">
+              {/* Animated loader with pulsing rings */}
+              <div className="relative">
+                <div className="w-20 h-20 rounded-full bg-primary/10 animate-ping absolute inset-0" />
+                <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center relative">
+                  {isVideo ? (
+                    <Play className="w-10 h-10 text-primary animate-pulse" />
+                  ) : (
+                    <ImageIcon className="w-10 h-10 text-primary animate-pulse" />
+                  )}
                 </div>
-                <Progress value={loadProgress} className="h-2" />
+              </div>
+              
+              {/* Smooth animated dots */}
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground text-sm">Loading {isVideo ? "video" : "image"}</span>
+                <span className="flex gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: "300ms" }} />
+                </span>
               </div>
             </div>
           )}
