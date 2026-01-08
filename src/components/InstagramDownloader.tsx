@@ -1,11 +1,12 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, lazy, Suspense } from "react";
 import { Download, Loader2, Play, Image as ImageIcon, Link, Sparkles, Eye, PackageCheck, Clipboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { MediaPreviewModal } from "./MediaPreviewModal";
+
+const MediaPreviewModal = lazy(() => import("./MediaPreviewModal").then(m => ({ default: m.MediaPreviewModal })));
 
 interface MediaResult {
   url: string;
@@ -338,12 +339,14 @@ export function InstagramDownloader() {
 
       {/* Preview Modal */}
       {previewMedia && (
-        <MediaPreviewModal
-          isOpen={!!previewMedia}
-          onClose={() => setPreviewMedia(null)}
-          media={previewMedia}
-          index={previewIndex}
-        />
+        <Suspense fallback={<div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+          <MediaPreviewModal
+            isOpen={!!previewMedia}
+            onClose={() => setPreviewMedia(null)}
+            media={previewMedia}
+            index={previewIndex}
+          />
+        </Suspense>
       )}
     </div>
   );
