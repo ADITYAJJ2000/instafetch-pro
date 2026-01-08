@@ -184,14 +184,14 @@ export function InstagramDownloader() {
       {/* Input Section */}
       <div className="relative group">
         <div className="absolute -inset-1 gradient-instagram rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-500" />
-        <div className="relative bg-card/80 backdrop-blur-glass border border-border/50 p-6 space-y-4 rounded-3xl shadow-none px-[12px] py-[20px]">
+        <div className="relative bg-card/80 backdrop-blur-glass border border-border/50 p-6 space-y-4 rounded-3xl shadow-none py-[24px] px-[24px]">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl gradient-instagram flex items-center justify-center">
               <Link className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Paste Instagram Link</h2>
-              <p className="text-sm text-muted-foreground">Posts, Reels, Stories, IGTV</p>
+              <h2 className="text-lg font-semibold text-foreground text-justify px-[12px]">Paste Instagram Link</h2>
+              <p className="text-sm text-muted-foreground px-[12px]">Posts, Reels, Stories, IGTV</p>
             </div>
           </div>
           
@@ -243,17 +243,17 @@ export function InstagramDownloader() {
           <div className="grid gap-4">
             {results.map((media, index) => <div key={index} className="group relative bg-card/60 backdrop-blur-glass border border-border/50 rounded-xl overflow-hidden hover:border-primary/50 transition-all duration-300">
                 <Button variant="outline" size="icon" onClick={() => {
-                  setPreviewMedia(media);
-                  setPreviewIndex(index);
-                }} className="absolute top-2 right-2 rounded-lg hover:border-primary hover:text-primary z-10">
+            setPreviewMedia(media);
+            setPreviewIndex(index);
+          }} className="absolute top-2 right-2 rounded-lg hover:border-primary hover:text-primary z-10">
                   <Eye className="w-4 h-4" />
                 </Button>
                 
                 <div className="p-4 flex flex-col items-center gap-4">
                   <div className="relative w-32 h-32 rounded-lg overflow-hidden bg-muted cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => {
-                    setPreviewMedia(media);
-                    setPreviewIndex(index);
-                  }}>
+              setPreviewMedia(media);
+              setPreviewIndex(index);
+            }}>
                     {media.thumbnail ? <img src={media.thumbnail} alt={`Media ${index + 1}`} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">
                         {media.type === "video" ? <Play className="w-10 h-10 text-muted-foreground" /> : <ImageIcon className="w-10 h-10 text-muted-foreground" />}
                       </div>}
@@ -265,9 +265,9 @@ export function InstagramDownloader() {
                   </div>
                   
                   <Button onClick={() => {
-                    setPreviewMedia(media);
-                    setPreviewIndex(index);
-                  }} className="gradient-instagram hover:opacity-90 transition-opacity rounded-lg w-full">
+              setPreviewMedia(media);
+              setPreviewIndex(index);
+            }} className="gradient-instagram hover:opacity-90 transition-opacity rounded-lg w-full">
                     <Download className="w-4 h-4 mr-2" />
                     Download
                   </Button>
