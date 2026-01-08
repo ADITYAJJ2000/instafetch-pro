@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, lazy, Suspense } from "react";
-import { Download, Loader2, Play, Image as ImageIcon, Link, Sparkles, Eye, PackageCheck, Clipboard } from "lucide-react";
+import { Download, Loader2, Play, Link, Sparkles, Eye, PackageCheck, Clipboard } from "lucide-react";
+import { XinstanIcon } from "./XinstanIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -255,7 +256,7 @@ export function InstagramDownloader() {
               setPreviewIndex(index);
             }}>
                     {media.thumbnail ? <img src={media.thumbnail} alt={`Media ${index + 1}`} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">
-                        {media.type === "video" ? <Play className="w-10 h-10 text-muted-foreground" /> : <ImageIcon className="w-10 h-10 text-muted-foreground" />}
+                        <XinstanIcon className="w-16 h-16" />
                       </div>}
                     {(media.type === "video" || media.type === "mp4") && <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
                         <div className="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center">
