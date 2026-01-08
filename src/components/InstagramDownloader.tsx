@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { Download, Loader2, Play, Image as ImageIcon, Link, Sparkles, Eye, PackageCheck } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { Download, Loader2, Play, Image as ImageIcon, Link, Sparkles, Eye, PackageCheck, Clipboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -26,9 +26,40 @@ export function InstagramDownloader() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<MediaResult[]>([]);
   const [previewMedia, setPreviewMedia] = useState<MediaResult | null>(null);
+  const [previewIndex, setPreviewIndex] = useState(0);
   const [bulkDownloading, setBulkDownloading] = useState(false);
   const [bulkProgress, setBulkProgress] = useState(0);
   const [bulkCurrent, setBulkCurrent] = useState(0);
+
+  // Clipboard paste handler
+  const handlePasteFromClipboard = useCallback(async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text && text.includes("instagram.com")) {
+        setUrl(text.trim());
+        toast.success("Link pasted from clipboard!");
+      } else if (text) {
+        setUrl(text.trim());
+        toast.info("Pasted content - please ensure it's an Instagram link");
+      } else {
+        toast.error("Clipboard is empty");
+      }
+    } catch (err) {
+      toast.error("Unable to access clipboard. Please paste manually.");
+    }
+  }, []);
+
+  // Auto-paste on focus if clipboard has Instagram URL
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const text = e.clipboardData?.getData("text");
+      if (text && text.includes("instagram.com")) {
+        setUrl(text.trim());
+      }
+    };
+    document.addEventListener("paste", handlePaste);
+    return () => document.removeEventListener("paste", handlePaste);
+  }, []);
 
   const handleDownload = async () => {
     if (!url.trim()) {
@@ -153,14 +184,26 @@ export function InstagramDownloader() {
           </div>
           
           <div className="flex gap-3">
-            <Input
-              type="url"
-              placeholder="https://www.instagram.com/p/..."
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleDownload()}
-              className="flex-1 h-12 bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/50 rounded-xl"
-            />
+            <div className="relative flex-1">
+              <Input
+                type="url"
+                placeholder="https://www.instagram.com/p/..."
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleDownload()}
+                className="h-12 pr-12 bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/50 rounded-xl"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={handlePasteFromClipboard}
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 hover:bg-primary/10 rounded-lg"
+                title="Paste from clipboard"
+              >
+                <Clipboard className="w-4 h-4 text-muted-foreground" />
+              </Button>
+            </div>
             <Button
               onClick={handleDownload}
               disabled={loading}
@@ -229,7 +272,7 @@ export function InstagramDownloader() {
                 <div className="flex items-center gap-4 p-4">
                   <div 
                     className="relative w-20 h-20 rounded-lg overflow-hidden bg-muted flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
-                    onClick={() => setPreviewMedia(media)}
+                    onClick={() => { setPreviewMedia(media); setPreviewIndex(index); }}
                   >
                     {media.thumbnail ? (
                       <img
@@ -273,13 +316,13 @@ export function InstagramDownloader() {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => setPreviewMedia(media)}
+                      onClick={() => { setPreviewMedia(media); setPreviewIndex(index); }}
                       className="rounded-lg hover:border-primary hover:text-primary"
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
                     <Button
-                      onClick={() => setPreviewMedia(media)}
+                      onClick={() => { setPreviewMedia(media); setPreviewIndex(index); }}
                       className="gradient-instagram hover:opacity-90 transition-opacity rounded-lg"
                     >
                       <Download className="w-4 h-4 mr-2" />
@@ -299,7 +342,7 @@ export function InstagramDownloader() {
           isOpen={!!previewMedia}
           onClose={() => setPreviewMedia(null)}
           media={previewMedia}
-          index={results.indexOf(previewMedia)}
+          index={previewIndex}
         />
       )}
     </div>
