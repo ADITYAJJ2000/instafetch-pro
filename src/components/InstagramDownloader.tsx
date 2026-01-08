@@ -242,33 +242,32 @@ export function InstagramDownloader() {
           
           <div className="grid gap-4">
             {results.map((media, index) => <div key={index} className="group relative bg-card/60 backdrop-blur-glass border border-border/50 rounded-xl overflow-hidden hover:border-primary/50 transition-all duration-300">
-                <div className="p-4 gap-[16px] flex items-center justify-center py-[40px] px-[20px]">
-                  <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-muted flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => {
-              setPreviewMedia(media);
-              setPreviewIndex(index);
-            }}>
+                <div className="p-4 flex flex-col items-center gap-4">
+                  <div className="relative w-32 h-32 rounded-lg overflow-hidden bg-muted cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => {
+                    setPreviewMedia(media);
+                    setPreviewIndex(index);
+                  }}>
                     {media.thumbnail ? <img src={media.thumbnail} alt={`Media ${index + 1}`} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">
-                        {media.type === "video" ? <Play className="w-8 h-8 text-muted-foreground" /> : <ImageIcon className="w-8 h-8 text-muted-foreground" />}
+                        {media.type === "video" ? <Play className="w-10 h-10 text-muted-foreground" /> : <ImageIcon className="w-10 h-10 text-muted-foreground" />}
                       </div>}
-                    {(media.type === "video" || media.type === "mp4") && <div className="absolute inset-0 bg-background/50 flex items-center justify-center px-0">
-                        <div className="w-8 h-8 rounded-full bg-primary/90 flex items-center justify-center">
-                          <Play className="w-4 h-4 text-primary-foreground fill-current ml-0.5" />
+                    {(media.type === "video" || media.type === "mp4") && <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center">
+                          <Play className="w-5 h-5 text-primary-foreground fill-current ml-0.5" />
                         </div>
                       </div>}
                   </div>
                   
-                  
                   <div className="flex gap-2">
                     <Button variant="outline" size="icon" onClick={() => {
-                setPreviewMedia(media);
-                setPreviewIndex(index);
-              }} className="rounded-lg hover:border-primary hover:text-primary">
+                      setPreviewMedia(media);
+                      setPreviewIndex(index);
+                    }} className="rounded-lg hover:border-primary hover:text-primary">
                       <Eye className="w-4 h-4" />
                     </Button>
                     <Button onClick={() => {
-                setPreviewMedia(media);
-                setPreviewIndex(index);
-              }} className="gradient-instagram hover:opacity-90 transition-opacity rounded-lg">
+                      setPreviewMedia(media);
+                      setPreviewIndex(index);
+                    }} className="gradient-instagram hover:opacity-90 transition-opacity rounded-lg">
                       <Download className="w-4 h-4 mr-2" />
                       Download
                     </Button>
