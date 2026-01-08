@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect, lazy, Suspense } from "react";
-import { Download, Loader2, Play, Link, Sparkles, Eye, PackageCheck, Clipboard } from "lucide-react";
-import { XinstanIcon } from "./XinstanIcon";
+import { Download, Loader2, Play, Image as ImageIcon, Link, Sparkles, Eye, PackageCheck, Clipboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -185,14 +184,14 @@ export function InstagramDownloader() {
       {/* Input Section */}
       <div className="relative group">
         <div className="absolute -inset-1 gradient-instagram rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-500" />
-        <div className="relative bg-card/80 backdrop-blur-glass border border-border/50 p-6 space-y-4 rounded-3xl shadow-none py-[24px] px-[24px]">
+        <div className="relative bg-card/80 backdrop-blur-glass border border-border/50 p-6 space-y-4 rounded-3xl shadow-none">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl gradient-instagram flex items-center justify-center">
-              <Link className="text-primary-foreground w-[24px] h-[24px]" />
+              <Link className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-foreground text-justify px-[12px]">Paste Instagram Link</h2>
-              <p className="text-sm text-muted-foreground px-[12px]">Posts, Reels, Stories, IGTV</p>
+              <h2 className="text-lg font-semibold text-foreground">Paste Instagram Link</h2>
+              <p className="text-sm text-muted-foreground">Posts, Reels, Stories, IGTV</p>
             </div>
           </div>
           
@@ -214,11 +213,11 @@ export function InstagramDownloader() {
       </div>
 
       {/* Results Section */}
-      {results.length > 0 && <div className="space-y-4 mx-0 my-[100px] px-0 py-[50px]">
+      {results.length > 0 && <div className="space-y-4 mx-0 my-[100px] px-0 py-[100px]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-foreground">
               <Sparkles className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-semibold">CONTENT FOUND</h3>
+              <h3 className="text-lg font-semibold">Found {results.length} media file{results.length > 1 ? "s" : ""}</h3>
             </div>
             
             {results.length > 1 && <Button onClick={handleBulkDownload} disabled={bulkDownloading} className="gradient-instagram hover:opacity-90 transition-opacity rounded-xl">
@@ -243,35 +242,48 @@ export function InstagramDownloader() {
           
           <div className="grid gap-4">
             {results.map((media, index) => <div key={index} className="group relative bg-card/60 backdrop-blur-glass border border-border/50 rounded-xl overflow-hidden hover:border-primary/50 transition-all duration-300">
-                <Button variant="outline" size="icon" onClick={() => {
-            setPreviewMedia(media);
-            setPreviewIndex(index);
-          }} className="absolute top-2 right-2 rounded-lg hover:border-primary hover:text-primary z-10">
-                  <Eye className="w-4 h-4" />
-                </Button>
-                
-                <div className="p-4 flex flex-col items-center gap-4">
-                  <div className="relative w-32 h-32 rounded-lg overflow-hidden bg-muted cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => {
+                <div className="flex items-center p-4 gap-[16px]">
+                  <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-muted flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => {
               setPreviewMedia(media);
               setPreviewIndex(index);
             }}>
                     {media.thumbnail ? <img src={media.thumbnail} alt={`Media ${index + 1}`} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">
-                        <XinstanIcon className="w-16 h-16" />
+                        {media.type === "video" ? <Play className="w-8 h-8 text-muted-foreground" /> : <ImageIcon className="w-8 h-8 text-muted-foreground" />}
                       </div>}
                     {(media.type === "video" || media.type === "mp4") && <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-                        <div className="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center">
-                          <Play className="w-5 h-5 text-primary-foreground fill-current ml-0.5" />
+                        <div className="w-8 h-8 rounded-full bg-primary/90 flex items-center justify-center">
+                          <Play className="w-4 h-4 text-primary-foreground fill-current ml-0.5" />
                         </div>
                       </div>}
                   </div>
                   
-                  <Button onClick={() => {
-              setPreviewMedia(media);
-              setPreviewIndex(index);
-            }} className="gradient-instagram hover:opacity-90 transition-opacity rounded-lg w-full">
-                    <Download className="w-4 h-4 mr-2" />
-                    Download
-                  </Button>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground capitalize">
+                      {media.type === "mp4" || media.type === "video" ? "Video" : media.type || "Media"} #{index + 1}
+                      {media.quality && <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">
+                          {media.quality}
+                        </span>}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Click to preview & download
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="icon" onClick={() => {
+                setPreviewMedia(media);
+                setPreviewIndex(index);
+              }} className="rounded-lg hover:border-primary hover:text-primary">
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button onClick={() => {
+                setPreviewMedia(media);
+                setPreviewIndex(index);
+              }} className="gradient-instagram hover:opacity-90 transition-opacity rounded-lg">
+                      <Download className="w-4 h-4 mr-2" />
+                      Download
+                    </Button>
+                  </div>
                 </div>
               </div>)}
           </div>

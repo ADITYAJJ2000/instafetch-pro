@@ -1,6 +1,8 @@
 import { Instagram } from "lucide-react";
+
 export function Header() {
-  return <header className="text-center space-y-6 mb-12">
+  return (
+    <header className="text-center space-y-6 mb-12">
       {/* Logo */}
       <div className="flex justify-center">
         <div className="relative group">
@@ -16,14 +18,15 @@ export function Header() {
         <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
           <span className="gradient-text">Xinstan</span>
         </h1>
-        <p className="md:text-2xl text-muted-foreground font-light text-lg">
+        <p className="text-xl md:text-2xl text-muted-foreground font-light">
           Download Instagram Videos & Photos
         </p>
       </div>
       
       {/* Subtitle */}
-      <p className="text-muted-foreground max-w-md mx-auto text-sm">
+      <p className="text-muted-foreground max-w-md mx-auto">
         Paste any Instagram link to download videos, photos, reels, stories, and IGTV content instantly.
       </p>
-    </header>;
+    </header>
+  );
 }
