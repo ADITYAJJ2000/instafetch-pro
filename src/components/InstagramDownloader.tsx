@@ -213,7 +213,7 @@ export function InstagramDownloader() {
       </div>
 
       {/* Results Section */}
-      {results.length > 0 && <div className="space-y-4 mx-0 my-[100px] px-0 py-[100px]">
+      {results.length > 0 && <div className="space-y-4 mx-0 my-[100px] px-0 py-[50px]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-foreground">
               <Sparkles className="w-5 h-5 text-primary" />
