@@ -264,7 +264,7 @@ export function InstagramDownloader() {
                           {media.quality}
                         </span>}
                     </p>
-                    <p className="text-sm text-muted-foreground truncate">
+                    <p className="text-sm text-muted-foreground">
                       Click to preview & download
                     </p>
                   </div>
