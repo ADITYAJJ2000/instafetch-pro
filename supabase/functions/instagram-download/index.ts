@@ -6,6 +6,36 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Validate Instagram URL to prevent SSRF attacks
+function isValidInstagramUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    
+    // Only allow instagram.com and www.instagram.com
+    const allowedHosts = ['instagram.com', 'www.instagram.com'];
+    if (!allowedHosts.includes(url.hostname.toLowerCase())) {
+      return false;
+    }
+    
+    // Only allow HTTPS
+    if (url.protocol !== 'https:') {
+      return false;
+    }
+    
+    // Validate path patterns (posts, reels, stories, tv)
+    const validPathPatterns = [
+      /^\/p\/[\w-]+\/?/,       // Posts
+      /^\/reel\/[\w-]+\/?/,    // Reels
+      /^\/stories\/[\w-]+\/?/, // Stories
+      /^\/tv\/[\w-]+\/?/       // IGTV
+    ];
+    
+    return validPathPatterns.some(pattern => pattern.test(url.pathname));
+  } catch {
+    return false;
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -15,9 +45,18 @@ serve(async (req) => {
   try {
     const { url } = await req.json();
 
-    if (!url) {
+    if (!url || typeof url !== 'string') {
       return new Response(
-        JSON.stringify({ error: 'Instagram URL is required' }),
+        JSON.stringify({ error: 'Valid Instagram URL is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate URL format and domain to prevent SSRF
+    if (!isValidInstagramUrl(url)) {
+      console.error('Invalid Instagram URL rejected:', url.substring(0, 100));
+      return new Response(
+        JSON.stringify({ error: 'Invalid Instagram URL format. Please provide a valid Instagram post, reel, or story URL.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -36,7 +75,7 @@ serve(async (req) => {
 
     const apiUrl = `https://instagram-downloader-download-instagram-stories-videos4.p.rapidapi.com/convert?url=${encodeURIComponent(url)}`;
     
-    console.log('Calling RapidAPI:', apiUrl);
+    console.log('Calling RapidAPI');
 
     const response = await fetch(apiUrl, {
       method: 'GET',
@@ -47,7 +86,7 @@ serve(async (req) => {
     });
 
     const data = await response.json();
-    console.log('API Response:', JSON.stringify(data));
+    console.log('API Response received');
 
     if (!response.ok) {
       return new Response(
